@@ -1,0 +1,28 @@
+api:
+  # osu! API app ID
+  client_id: 123
+
+  # osu! API app secret
+  client_secret: ...
+
+  # where the osu! website should redirect your visitors after they hit "Authorize"
+  redirect_url: http://localhost:19181/auth
+
+  # osu! API access scopes
+  scope:
+  - identify
+  - public
+
+service:
+  # network interface to listen to
+  bind_host: 0.0.0.0
+
+  # port to listen to
+  bind_port: 19181
+
+  # master key for encrypting user sessions -- pick something strong
+  cookie_key: 907cfb257bff1c5bc7f2cc621c0dec1bd56d1aa7ee1a37deb79g20de22beeb2a86cb10033a78afc2b555653f495990b48b0e97d621f4ed5a178d152a8ded01d7
+
+  # location of the Valkey instance for saving user sessions/tokens
+  valkey:
+    address: redis://localhost:6379

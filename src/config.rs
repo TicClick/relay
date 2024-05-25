@@ -17,7 +17,6 @@ pub struct API {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Service {
-    pub root: String,
     pub bind_host: String,
     pub bind_port: u16,
     pub cookie_key: Option<String>,

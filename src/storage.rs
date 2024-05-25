@@ -66,7 +66,8 @@ impl Storage for ValkeyStorage {
                 log::error!("Failed to serialize session to string: {}", e);
                 Ok(())
             }
-            Ok(serialized) => match conn.set_ex::<&str, String, ()>(key, serialized, exp.as_secs()) {
+            Ok(serialized) => match conn.set_ex::<&str, String, ()>(key, serialized, exp.as_secs())
+            {
                 Ok(_) => Ok(()),
                 Err(e) => {
                     log::error!("Failed to save session to Valkey: {}", e);
