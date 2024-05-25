@@ -94,8 +94,7 @@ fn show_authentication_error(error: &str) -> viz::Result<Response> {
     ))
 }
 
-async fn test_and_save_token(
-    r: Request,
+async fn show_index_with_user_data(
     client: reqwest::Client,
     token: AccessToken,
 ) -> viz::Result<Response> {
@@ -108,11 +107,10 @@ async fn test_and_save_token(
 
     match client.execute(user_data_request).await {
         Err(e) => show_authentication_error(&format!(
-            "failed to check who you are through the osu! api: {}",
+            "failed to check who you are through the osu! API: {}",
             e
         )),
         Ok(response) => {
-            r.session().set(SESSION_FIELD_TOKEN, token.clone()).unwrap();
             let text = response.text().await.unwrap();
             let user_data: UserCompact = serde_json::from_str(&text).unwrap();
             show_success_page(Some(user_data), token)
@@ -132,7 +130,7 @@ pub async fn index(r: Request) -> viz::Result<Response> {
         Err(outer_error) => {
             let token = r.session().get::<AccessToken>(SESSION_FIELD_TOKEN).unwrap();
             match token {
-                Some(t) => test_and_save_token(r, reqwest::Client::new(), t).await,
+                Some(t) => show_index_with_user_data(reqwest::Client::new(), t).await,
                 None => {
                     if outer_error.to_string().contains("missing field") {
                         show_authentication_page(r, &config)
@@ -170,7 +168,15 @@ pub async fn index(r: Request) -> viz::Result<Response> {
                         Ok(response) => {
                             let text = response.text().await.unwrap();
                             let token: AccessToken = serde_json::from_str(&text).unwrap();
-                            test_and_save_token(r, client, token).await
+                            match r.session().set(SESSION_FIELD_TOKEN, token) {
+                                Ok(()) => {
+                                    Ok(Response::redirect_with_status("/auth", StatusCode::FOUND))
+                                }
+                                Err(e) => show_authentication_error(&format!(
+                                    "failed to save the obtained API token: {}",
+                                    e
+                                )),
+                            }
                         }
                     }
                 }
