@@ -10,7 +10,7 @@ pub const SESSION_COOKIE_NAME: &str = "session-id";
 
 #[derive(Clone)]
 pub struct ValkeyStorage {
-    client: redis::Client,
+    pub client: redis::Client,
     cache: Arc<Mutex<HashMap<String, sessions::Data>>>,
 }
 
@@ -25,7 +25,7 @@ impl ValkeyStorage {
 
 impl Storage for ValkeyStorage {
     async fn get(&self, key: &str) -> std::io::Result<Option<sessions::Data>> {
-        log::info!("Loading session: {}", key);
+        log::debug!("Loading session: {}", key);
 
         if let Some(v) = self.cache.lock().unwrap().get(key) {
             return Ok(Some(v.clone()));
@@ -53,7 +53,7 @@ impl Storage for ValkeyStorage {
         val: sessions::Data,
         exp: &std::time::Duration,
     ) -> std::io::Result<()> {
-        log::info!("Saving session: {} (exp: {:?})", key, exp);
+        log::debug!("Saving session: {} (exp: {:?})", key, exp);
 
         self.cache
             .lock()
@@ -78,7 +78,7 @@ impl Storage for ValkeyStorage {
     }
 
     async fn remove(&self, key: &str) -> std::io::Result<()> {
-        log::info!("removing session: {}", key);
+        log::debug!("removing session: {}", key);
 
         self.cache.lock().unwrap().remove(key);
 

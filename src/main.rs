@@ -4,6 +4,7 @@ use std::net::SocketAddr;
 use std::str::FromStr;
 
 use eyre::Result;
+use refresher::TokenRefresher;
 use storage::ValkeyStorage;
 use storage::SESSION_COOKIE_NAME;
 use tokio::net::TcpListener;
@@ -22,6 +23,7 @@ use viz::{serve, Router};
 pub mod config;
 pub mod handlers;
 pub mod model;
+pub mod refresher;
 pub mod storage;
 pub mod templates;
 
@@ -80,13 +82,16 @@ async fn main() -> Result<()> {
                 .get("/logout", handlers::auth::logout),
         )
         .get("/api/token", handlers::api::token)
-        .with(State::<config::Config>::new(c))
+        .with(State::<config::Config>::new(c.clone()))
         .with(State::<ValkeyStorage>::new(storage.clone()))
         .with(session::Config::new(
-            Store::new(storage, generate_session_id, verify_session_id),
+            Store::new(storage.clone(), generate_session_id, verify_session_id),
             CookieOptions::default().name(SESSION_COOKIE_NAME),
         ))
         .with(cookie::Config::with_key(key));
+
+    let mut refresher = TokenRefresher::new(c, storage);
+    refresher.start();
 
     serve(listener, app).await?;
 

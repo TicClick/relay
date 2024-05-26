@@ -12,6 +12,7 @@ eyre = "0.6.12"
 log = { version = "0.4.21", features = ["std"] }
 markup = "0.15.0"
 nanoid = "0.4.0"
+rand = "0.8.5"
 redis = { version = "0.25.3", features = ["tokio-comp"] }
 reqwest = "0.12.4"
 serde = "1.0.202"
