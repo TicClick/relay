@@ -4,6 +4,7 @@ use std::net::SocketAddr;
 use std::str::FromStr;
 
 use eyre::Result;
+use storage::ValkeyStorage;
 use storage::SESSION_COOKIE_NAME;
 use tokio::net::TcpListener;
 
@@ -20,9 +21,9 @@ use viz::{serve, Router};
 
 pub mod config;
 pub mod handlers;
+pub mod model;
 pub mod storage;
 pub mod templates;
-pub mod token;
 
 const DEFAULT_CONFIG_PATH: &str = "./config.yaml";
 
@@ -38,6 +39,14 @@ fn hex2bin(hex: &str) -> Vec<u8> {
         .step_by(2)
         .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap())
         .collect()
+}
+
+pub fn generate_session_id() -> String {
+    nanoid::nanoid!(64)
+}
+
+pub fn verify_session_id(sid: &str) -> bool {
+    sid.len() == 64
 }
 
 #[tokio::main]
@@ -61,6 +70,7 @@ async fn main() -> Result<()> {
     };
 
     let storage = storage::ValkeyStorage::new(&c);
+
     let app = Router::new()
         .get("/", handlers::index::index)
         .nest(
@@ -69,9 +79,11 @@ async fn main() -> Result<()> {
                 .get("/", handlers::auth::index)
                 .get("/logout", handlers::auth::logout),
         )
+        .get("/api/token", handlers::api::token)
         .with(State::<config::Config>::new(c))
+        .with(State::<ValkeyStorage>::new(storage.clone()))
         .with(session::Config::new(
-            Store::new(storage, || nanoid::nanoid!(64), |sid: &str| sid.len() == 64),
+            Store::new(storage, generate_session_id, verify_session_id),
             CookieOptions::default().name(SESSION_COOKIE_NAME),
         ))
         .with(cookie::Config::with_key(key));

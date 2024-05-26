@@ -33,3 +33,17 @@ impl AccessToken {
 fn utcnow() -> i64 {
     Utc::now().timestamp()
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct OAuth2FeedbackQuery {
+    pub code: String,
+    pub state: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct UserCompact {
+    #[serde(rename = "id")]
+    pub user_id: u32,
+    pub username: String,
+    pub avatar_url: String,
+}

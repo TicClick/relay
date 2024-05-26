@@ -1,7 +1,6 @@
 use markup::{self, Render};
-use rosu_v2::model::user::UserCompact;
 
-use crate::token::AccessToken;
+use crate::model::{AccessToken, UserCompact};
 
 const WEBSITE_TITLE: &str = "relay";
 
@@ -34,30 +33,30 @@ markup::define! {
 }
 
 markup::define! {
-    AuthSuccessPage<'a>(user_data: Option<UserCompact>, token: AccessToken, logout_url: &'a str) {
+    AuthSuccessPage<'a>(data: UserCompact, token: AccessToken, session_id: &'a str, logout_url: &'a str) {
         @BaseTemplate {
             title: "authentication",
-            content: _AuthSuccessContent { user_data, token, logout_url }
+            content: _AuthSuccessContent { data, token, session_id, logout_url }
         }
     }
 
-    _AuthSuccessContent<'a> (user_data: &'a Option<UserCompact>, token: &'a AccessToken, logout_url: &'a str) {
+    _AuthSuccessContent<'a> (data: &'a UserCompact, token: &'a AccessToken, session_id: &'a str, logout_url: &'a str) {
         h2 { "Status" }
-        @if let Some(data) = user_data {
-            p {
-                a[href = format!("https://osu.ppy.sh/users/{}", data.user_id)] {
-                    img[
-                        src = &data.avatar_url,
-                        alt = "your avatar",
-                        title = data.username.to_string() + " (#" + &data.user_id.to_string() + ")"
-                    ] {}
-                }
+        p {
+            a[href = format!("https://osu.ppy.sh/users/{}", data.user_id)] {
+                img[
+                    src = &data.avatar_url,
+                    alt = "your avatar",
+                    title = data.username.to_string() + " (#" + &data.user_id.to_string() + ")"
+                ] {}
             }
         }
         p {
             "Current osu! API token: " code {
                 @token.access_token[0..8] "..." @token.access_token[token.access_token.len() - 8..]
             } "(obtained at: " @token.obtained_at().to_string() ", expires in: " @token.lifetime() " seconds)"
+            br { }
+            "Your relay session identifier: " code { @session_id }
             br { }
             a[href = logout_url] { b { "Log out" } }
         }

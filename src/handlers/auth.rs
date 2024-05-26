@@ -2,27 +2,18 @@ use std::collections::HashMap;
 
 use nanoid::nanoid;
 use reqwest;
-use rosu_v2::model::user::UserCompact;
-use serde::{Deserialize, Serialize};
 use viz::{IntoResponse, Request, RequestExt, Response, ResponseExt, StatusCode};
 
-use crate::{
-    config::{self, Config},
-    templates::auth::{AuthErrorPage, AuthInitiationPage, AuthSuccessPage},
-    token::AccessToken,
-};
+use crate::config::{self, Config};
+use crate::model::{AccessToken, OAuth2FeedbackQuery, UserCompact};
+use crate::storage::SESSION_COOKIE_NAME;
+use crate::templates::auth::{AuthErrorPage, AuthInitiationPage, AuthSuccessPage};
 
 pub const API_AUTHORIZATION_URL: &str = "https://osu.ppy.sh/oauth/authorize";
 pub const API_AUTHENTICATION_URL: &str = "https://osu.ppy.sh/oauth/token";
 
 pub const SESSION_FIELD_STATE: &str = "state";
 pub const SESSION_FIELD_TOKEN: &str = "token";
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct OAuth2FeedbackQuery {
-    pub code: String,
-    pub state: String,
-}
 
 fn make_authorization_url(config: &Config) -> (reqwest::Url, String) {
     let state = nanoid!(10);
@@ -73,11 +64,16 @@ fn show_authentication_page(r: Request, config: &config::Config) -> viz::Result<
     }
 }
 
-fn show_success_page(user_data: Option<UserCompact>, token: AccessToken) -> viz::Result<Response> {
+fn show_success_page(
+    data: UserCompact,
+    token: AccessToken,
+    session_id: &str,
+) -> viz::Result<Response> {
     Ok(Response::html(
         AuthSuccessPage {
-            user_data,
+            data,
             token,
+            session_id,
             logout_url: "/auth/logout",
         }
         .to_string(),
@@ -97,6 +93,7 @@ fn show_authentication_error(error: &str) -> viz::Result<Response> {
 async fn show_index_with_user_data(
     client: reqwest::Client,
     token: AccessToken,
+    session_id: &str,
 ) -> viz::Result<Response> {
     let user_data_request = client
         .get(reqwest::Url::parse("https://osu.ppy.sh/api/v2/me").unwrap())
@@ -113,7 +110,7 @@ async fn show_index_with_user_data(
         Ok(response) => {
             let text = response.text().await.unwrap();
             let user_data: UserCompact = serde_json::from_str(&text).unwrap();
-            show_success_page(Some(user_data), token)
+            show_success_page(user_data, token, session_id)
         }
     }
 }
@@ -130,7 +127,13 @@ pub async fn index(r: Request) -> viz::Result<Response> {
         Err(outer_error) => {
             let token = r.session().get::<AccessToken>(SESSION_FIELD_TOKEN).unwrap();
             match token {
-                Some(t) => show_index_with_user_data(reqwest::Client::new(), t).await,
+                Some(t) => {
+                    let cookie_storage = r.cookies().unwrap();
+                    let session_id_cookie = r.cookie(SESSION_COOKIE_NAME).unwrap();
+                    let decrypted = cookie_storage.private_decrypt(session_id_cookie);
+                    show_index_with_user_data(reqwest::Client::new(), t, decrypted.unwrap().value())
+                        .await
+                }
                 None => {
                     if outer_error.to_string().contains("missing field") {
                         show_authentication_page(r, &config)
