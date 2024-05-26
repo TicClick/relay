@@ -20,6 +20,9 @@ service:
   # port to listen to
   bind_port: 19181
 
+  # rate limiting -- infringing requests get HTTP 503
+  max_concurrent_requests: 80
+
   # master key for encrypting user sessions -- pick something strong
   cookie_key: 907cfb257bff1c5bc7f2cc621c0dec1bd56d1aa7ee1a37deb79g20de22beeb2a86cb10033a78afc2b555653f495990b48b0e97d621f4ed5a178d152a8ded01d7
 

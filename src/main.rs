@@ -22,6 +22,7 @@ use viz::{serve, Router};
 
 pub mod config;
 pub mod handlers;
+pub mod middleware;
 pub mod model;
 pub mod refresher;
 pub mod storage;
@@ -82,6 +83,7 @@ async fn main() -> Result<()> {
                 .get("/logout", handlers::auth::logout),
         )
         .get("/api/token", handlers::api::token)
+        .with(middleware::Config::new(c.service.max_concurrent_requests))
         .with(State::<config::Config>::new(c.clone()))
         .with(State::<ValkeyStorage>::new(storage.clone()))
         .with(session::Config::new(

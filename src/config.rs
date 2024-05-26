@@ -19,6 +19,7 @@ pub struct API {
 pub struct Service {
     pub bind_host: String,
     pub bind_port: u16,
+    pub max_concurrent_requests: i32,
     pub cookie_key: Option<String>,
     pub valkey: Valkey,
 }
