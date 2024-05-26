@@ -1260,6 +1260,7 @@ dependencies = [
  "log",
  "markup",
  "nanoid",
+ "rand",
  "redis",
  "reqwest",
  "serde",
