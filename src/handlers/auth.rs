@@ -21,7 +21,6 @@ fn make_authorization_url(config: &Config) -> (reqwest::Url, String) {
         API_AUTHORIZATION_URL,
         &[
             ("client_id", config.api.client_id.to_string()),
-            ("client_secret", config.api.client_secret.clone()),
             ("redirect_uri", config.api.redirect_url.clone()),
             ("response_type", "code".to_owned()),
             ("scope", config.api.scope.join(" ")),
